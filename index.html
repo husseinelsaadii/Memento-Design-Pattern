@@ -1,0 +1,1316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Memento Design Pattern Simulation</title>
+  <style>
+    :root{
+      --bg:#0b1020;
+      --bg-soft:#111936;
+      --panel:#121b2f;
+      --panel-2:#0f1729;
+      --text:#eaf1ff;
+      --muted:#9db0d0;
+      --line:rgba(255,255,255,.09);
+      --blue:#4aa3ff;
+      --blue-soft:rgba(74,163,255,.16);
+      --green:#42d392;
+      --green-soft:rgba(66,211,146,.16);
+      --orange:#ffb14a;
+      --orange-soft:rgba(255,177,74,.16);
+      --danger:#ff6a7a;
+      --shadow:0 18px 50px rgba(0,0,0,.35);
+      --radius:22px;
+      --transition:260ms ease;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(74,163,255,.14), transparent 28%),
+        radial-gradient(circle at top right, rgba(255,177,74,.12), transparent 24%),
+        radial-gradient(circle at bottom center, rgba(66,211,146,.10), transparent 28%),
+        linear-gradient(180deg, #0b1020 0%, #090d19 100%);
+      color:var(--text);
+      overflow-x:hidden;
+    }
+
+    .page{
+      max-width:1400px;
+      margin:0 auto;
+      padding:28px;
+    }
+
+    .hero{
+      position:relative;
+      margin-bottom:22px;
+      padding:24px 24px 18px;
+      background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      border:1px solid var(--line);
+      border-radius:28px;
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+
+    .hero::before{
+      content:"";
+      position:absolute;
+      inset:-30% auto auto -5%;
+      width:300px;
+      height:300px;
+      background:radial-gradient(circle, rgba(74,163,255,.18), transparent 65%);
+      pointer-events:none;
+    }
+
+    .hero::after{
+      content:"";
+      position:absolute;
+      inset:auto -8% -40% auto;
+      width:360px;
+      height:360px;
+      background:radial-gradient(circle, rgba(66,211,146,.14), transparent 60%);
+      pointer-events:none;
+    }
+
+    .hero-top{
+      display:flex;
+      gap:14px;
+      align-items:flex-start;
+      justify-content:space-between;
+      position:relative;
+      z-index:1;
+    }
+
+    .title-wrap h1{
+      margin:0 0 8px;
+      font-size:clamp(1.8rem, 2vw + 1rem, 3rem);
+      line-height:1.08;
+      letter-spacing:.2px;
+    }
+
+    .subtitle{
+      margin:0;
+      color:var(--muted);
+      max-width:860px;
+      line-height:1.65;
+      font-size:1rem;
+    }
+
+    .hero-badges{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      margin-top:16px;
+    }
+
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:9px 14px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.03);
+      color:var(--text);
+      font-size:.92rem;
+      white-space:nowrap;
+    }
+
+    .dot{
+      width:9px;
+      height:9px;
+      border-radius:50%;
+      box-shadow:0 0 18px currentColor;
+      flex:0 0 auto;
+    }
+
+    .dot.blue{color:var(--blue); background:var(--blue)}
+    .dot.green{color:var(--green); background:var(--green)}
+    .dot.orange{color:var(--orange); background:var(--orange)}
+
+    .top-actions{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    .btn{
+      appearance:none;
+      border:none;
+      outline:none;
+      color:var(--text);
+      background:#1a2644;
+      padding:12px 16px;
+      border-radius:16px;
+      font-weight:700;
+      letter-spacing:.15px;
+      cursor:pointer;
+      transition:transform var(--transition), opacity var(--transition), background var(--transition), box-shadow var(--transition);
+      box-shadow:0 8px 24px rgba(0,0,0,.22);
+      border:1px solid rgba(255,255,255,.06);
+    }
+
+    .btn:hover{transform:translateY(-1px)}
+    .btn:active{transform:translateY(0)}
+    .btn:disabled{
+      opacity:.55;
+      cursor:not-allowed;
+      transform:none;
+    }
+
+    .btn-blue{background:linear-gradient(180deg, rgba(74,163,255,.28), rgba(74,163,255,.16))}
+    .btn-green{background:linear-gradient(180deg, rgba(66,211,146,.28), rgba(66,211,146,.14))}
+    .btn-orange{background:linear-gradient(180deg, rgba(255,177,74,.28), rgba(255,177,74,.14))}
+    .btn-ghost{background:rgba(255,255,255,.04)}
+    .btn-present{
+      background:linear-gradient(180deg, rgba(155,120,255,.35), rgba(155,120,255,.15));
+    }
+
+    .presentation-pill{
+      display:none;
+      align-items:center;
+      gap:8px;
+      padding:11px 15px;
+      border-radius:999px;
+      background:rgba(155,120,255,.14);
+      border:1px solid rgba(155,120,255,.25);
+      color:#d9cbff;
+      font-weight:700;
+      white-space:nowrap;
+    }
+
+    .presentation-mode .presentation-pill{display:inline-flex}
+    .presentation-mode #controlPanel .action-buttons{display:none}
+
+    .status-bar{
+      margin-top:16px;
+      display:flex;
+      gap:12px;
+      align-items:center;
+      flex-wrap:wrap;
+      padding:12px 14px;
+      border-radius:18px;
+      background:rgba(255,255,255,.03);
+      border:1px solid var(--line);
+      position:relative;
+      z-index:1;
+    }
+
+    .status-label{
+      color:#c9d7ef;
+      font-size:.92rem;
+      font-weight:700;
+      opacity:.95;
+    }
+
+    .status-message{
+      color:#f3f7ff;
+      font-weight:600;
+    }
+
+    .layout{
+      display:grid;
+      grid-template-columns:1.1fr 0.85fr 1fr;
+      gap:18px;
+      align-items:stretch;
+    }
+
+    .panel{
+      position:relative;
+      min-height:420px;
+      background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.025));
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+
+    .panel-header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:18px 18px 12px;
+      border-bottom:1px solid var(--line);
+    }
+
+    .panel-title-wrap{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+
+    .panel-tag{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      width:max-content;
+      padding:7px 12px;
+      border-radius:999px;
+      font-size:.84rem;
+      font-weight:700;
+      border:1px solid transparent;
+    }
+
+    .panel-title{
+      margin:0;
+      font-size:1.15rem;
+      letter-spacing:.1px;
+    }
+
+    .panel-subtitle{
+      margin:0;
+      color:var(--muted);
+      font-size:.92rem;
+      line-height:1.45;
+      max-width:90%;
+    }
+
+    .editor-panel .panel-tag{
+      color:#bfe0ff;
+      background:var(--blue-soft);
+      border-color:rgba(74,163,255,.25);
+    }
+
+    .memento-panel .panel-tag{
+      color:#c8ffe6;
+      background:var(--green-soft);
+      border-color:rgba(66,211,146,.25);
+    }
+
+    .history-panel .panel-tag{
+      color:#ffe2ba;
+      background:var(--orange-soft);
+      border-color:rgba(255,177,74,.25);
+    }
+
+    .panel-content{
+      padding:18px;
+    }
+
+    .glow-border{
+      position:absolute;
+      inset:0;
+      border-radius:inherit;
+      pointer-events:none;
+      opacity:0;
+      transition:opacity var(--transition);
+      box-shadow:inset 0 0 0 1px rgba(255,255,255,.07), 0 0 0 1px rgba(255,255,255,.02);
+    }
+
+    .panel.active .glow-border{
+      opacity:1;
+      animation:pulsePanel 1s ease;
+    }
+
+    .editor-frame{
+      position:relative;
+      padding:14px;
+      border-radius:18px;
+      background:linear-gradient(180deg, rgba(74,163,255,.08), rgba(74,163,255,.03));
+      border:1px solid rgba(74,163,255,.17);
+      min-height:235px;
+    }
+
+    .window-dots{
+      display:flex;
+      gap:8px;
+      margin-bottom:14px;
+    }
+
+    .window-dots span{
+      width:11px;
+      height:11px;
+      border-radius:50%;
+      background:rgba(255,255,255,.18);
+    }
+
+    .editor-screen{
+      min-height:165px;
+      border-radius:16px;
+      padding:18px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015)),
+        #0c1529;
+      border:1px solid rgba(255,255,255,.06);
+      color:#eef6ff;
+      font:600 1.15rem/1.7 "Consolas","SFMono-Regular","Menlo",monospace;
+      letter-spacing:.2px;
+      white-space:pre-wrap;
+      word-break:break-word;
+      box-shadow:inset 0 0 0 1px rgba(255,255,255,.02);
+    }
+
+    .editor-screen.empty{
+      color:#7f91b0;
+      font-style:italic;
+      font-weight:500;
+    }
+
+    .tiny-caption{
+      margin-top:12px;
+      color:var(--muted);
+      line-height:1.55;
+      font-size:.92rem;
+    }
+
+    .controls{
+      margin-top:16px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+
+    .control-title{
+      margin:0;
+      font-size:.95rem;
+      color:#d4dff2;
+      font-weight:800;
+      letter-spacing:.2px;
+    }
+
+    .action-buttons{
+      display:grid;
+      grid-template-columns:repeat(2, minmax(0, 1fr));
+      gap:12px;
+    }
+
+    .action-buttons .btn{
+      width:100%;
+      min-height:48px;
+    }
+
+    .memento-zone{
+      position:relative;
+      min-height:280px;
+      display:grid;
+      place-items:center;
+      padding:10px;
+      border-radius:18px;
+      border:1px dashed rgba(66,211,146,.22);
+      background:
+        radial-gradient(circle at center, rgba(66,211,146,.12), transparent 48%),
+        linear-gradient(180deg, rgba(66,211,146,.06), rgba(66,211,146,.02));
+      overflow:hidden;
+    }
+
+    .memento-card{
+      width:min(290px, 100%);
+      min-height:168px;
+      padding:16px;
+      border-radius:20px;
+      background:linear-gradient(180deg, rgba(66,211,146,.18), rgba(66,211,146,.08));
+      border:1px solid rgba(66,211,146,.28);
+      box-shadow:0 14px 35px rgba(0,0,0,.28);
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      transform:translateY(14px);
+      opacity:0;
+      transition:opacity .35s ease, transform .35s ease, box-shadow .35s ease;
+    }
+
+    .memento-card.visible{
+      opacity:1;
+      transform:translateY(0);
+      animation:floatCard 3.2s ease-in-out infinite;
+    }
+
+    .memento-top{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+    }
+
+    .memento-title{
+      font-size:1rem;
+      font-weight:800;
+      color:#f0fff8;
+    }
+
+    .memento-badge{
+      font-size:.8rem;
+      font-weight:800;
+      color:#0a2015;
+      background:#7af0bb;
+      padding:6px 10px;
+      border-radius:999px;
+    }
+
+    .memento-content{
+      padding:14px;
+      border-radius:16px;
+      background:rgba(9,20,16,.45);
+      border:1px solid rgba(255,255,255,.06);
+      min-height:86px;
+      color:#eefff7;
+      font:700 1rem/1.55 "Consolas","SFMono-Regular","Menlo",monospace;
+      white-space:pre-wrap;
+      word-break:break-word;
+    }
+
+    .memento-meta{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+      color:#b7e9d0;
+      font-size:.84rem;
+    }
+
+    .memento-placeholder{
+      text-align:center;
+      color:#93b89f;
+      line-height:1.7;
+      max-width:300px;
+      padding:12px;
+    }
+
+    .memento-placeholder strong{
+      color:#d7ffe8;
+    }
+
+    .history-frame{
+      min-height:310px;
+      padding:14px;
+      border-radius:18px;
+      border:1px solid rgba(255,177,74,.18);
+      background:linear-gradient(180deg, rgba(255,177,74,.08), rgba(255,177,74,.03));
+      position:relative;
+    }
+
+    .stack-title{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:14px;
+    }
+
+    .stack-title h3{
+      margin:0;
+      font-size:1rem;
+    }
+
+    .stack-count{
+      padding:8px 12px;
+      border-radius:999px;
+      background:rgba(255,177,74,.14);
+      border:1px solid rgba(255,177,74,.2);
+      font-size:.85rem;
+      font-weight:800;
+      color:#ffdcae;
+    }
+
+    .stack{
+      display:flex;
+      flex-direction:column-reverse;
+      gap:10px;
+      min-height:220px;
+      justify-content:flex-start;
+    }
+
+    .history-empty{
+      display:grid;
+      place-items:center;
+      min-height:220px;
+      border-radius:16px;
+      border:1px dashed rgba(255,177,74,.18);
+      color:#caa97c;
+      text-align:center;
+      line-height:1.65;
+      padding:16px;
+    }
+
+    .stack-item{
+      position:relative;
+      padding:14px 14px 12px;
+      border-radius:16px;
+      background:linear-gradient(180deg, rgba(66,211,146,.18), rgba(66,211,146,.08));
+      border:1px solid rgba(66,211,146,.28);
+      transform:translateY(10px);
+      opacity:0;
+      animation:stackIn .35s ease forwards;
+      box-shadow:0 10px 22px rgba(0,0,0,.2);
+    }
+
+    .stack-item.top{
+      outline:1px solid rgba(255,255,255,.08);
+      box-shadow:0 12px 30px rgba(0,0,0,.24), 0 0 0 1px rgba(255,177,74,.16);
+    }
+
+    .stack-item.popping{
+      animation:popOut .45s ease forwards;
+    }
+
+    .stack-item-header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:8px;
+      color:#effff8;
+      font-size:.92rem;
+      font-weight:800;
+    }
+
+    .stack-item-content{
+      padding:10px 12px;
+      border-radius:12px;
+      background:rgba(7,17,14,.42);
+      border:1px solid rgba(255,255,255,.05);
+      color:#effff7;
+      font:700 .94rem/1.45 "Consolas","SFMono-Regular","Menlo",monospace;
+      white-space:pre-wrap;
+      word-break:break-word;
+    }
+
+    .stack-item small{
+      color:#b4e8ce;
+      opacity:.95;
+    }
+
+    .legend{
+      margin-top:14px;
+      display:grid;
+      gap:10px;
+    }
+
+    .legend-item{
+      display:flex;
+      align-items:flex-start;
+      gap:10px;
+      color:var(--muted);
+      line-height:1.5;
+      font-size:.92rem;
+    }
+
+    .legend-item strong{color:var(--text)}
+
+    .log-panel{
+      margin-top:18px;
+      background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.025));
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+
+    .log-header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:16px 18px;
+      border-bottom:1px solid var(--line);
+    }
+
+    .log-header h3{
+      margin:0;
+      font-size:1.05rem;
+    }
+
+    .log-header p{
+      margin:0;
+      color:var(--muted);
+      font-size:.92rem;
+    }
+
+    .log-list{
+      list-style:none;
+      margin:0;
+      padding:14px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      max-height:270px;
+      overflow:auto;
+    }
+
+    .log-item{
+      display:grid;
+      grid-template-columns:auto 1fr;
+      gap:12px;
+      align-items:flex-start;
+      padding:12px 13px;
+      border-radius:16px;
+      background:rgba(255,255,255,.03);
+      border:1px solid rgba(255,255,255,.06);
+      animation:fadeSlide .32s ease;
+    }
+
+    .log-index{
+      min-width:34px;
+      height:34px;
+      border-radius:12px;
+      display:grid;
+      place-items:center;
+      font-weight:900;
+      font-size:.85rem;
+      color:#dbe9ff;
+      background:linear-gradient(180deg, rgba(74,163,255,.22), rgba(74,163,255,.08));
+      border:1px solid rgba(74,163,255,.18);
+    }
+
+    .log-text{
+      color:#eaf1ff;
+      line-height:1.55;
+    }
+
+    .log-text span{
+      color:var(--muted);
+      font-size:.88rem;
+      display:block;
+      margin-top:2px;
+    }
+
+    .footer-note{
+      margin-top:10px;
+      color:var(--muted);
+      font-size:.88rem;
+      text-align:right;
+    }
+
+    .muted-strong{
+      color:#cddbf4;
+      font-weight:800;
+    }
+
+    .hidden{
+      display:none !important;
+    }
+
+    @keyframes pulsePanel{
+      0%{box-shadow:0 0 0 0 transparent}
+      20%{box-shadow:0 0 0 1px rgba(255,255,255,.06), 0 0 0 10px rgba(255,255,255,.02)}
+      100%{box-shadow:0 0 0 0 transparent}
+    }
+
+    @keyframes floatCard{
+      0%,100%{transform:translateY(0)}
+      50%{transform:translateY(-5px)}
+    }
+
+    @keyframes stackIn{
+      from{opacity:0; transform:translateY(10px)}
+      to{opacity:1; transform:translateY(0)}
+    }
+
+    @keyframes popOut{
+      0%{opacity:1; transform:translateY(0) scale(1)}
+      100%{opacity:0; transform:translateX(28px) translateY(-6px) scale(.96)}
+    }
+
+    @keyframes fadeSlide{
+      from{opacity:0; transform:translateY(8px)}
+      to{opacity:1; transform:translateY(0)}
+    }
+
+    @media (max-width: 1120px){
+      .layout{
+        grid-template-columns:1fr;
+      }
+      .panel{min-height:auto}
+      .panel-subtitle{max-width:100%}
+    }
+
+    @media (max-width: 700px){
+      .page{padding:16px}
+      .hero{padding:18px}
+      .hero-top{
+        flex-direction:column;
+      }
+      .top-actions{width:100%}
+      .top-actions .btn,
+      .top-actions .presentation-pill{width:100%; justify-content:center}
+      .action-buttons{
+        grid-template-columns:1fr;
+      }
+      .status-bar{align-items:flex-start}
+    }
+  </style>
+</head>
+<body>
+  <div class="page" id="app">
+    <section class="hero">
+      <div class="hero-top">
+        <div class="title-wrap">
+          <h1>Memento Design Pattern — Interactive Simulation</h1>
+          <p class="subtitle">
+            This simulation demonstrates how the <span class="muted-strong">Memento pattern</span> saves and restores object state without breaking encapsulation.
+            The <span class="muted-strong">Originator</span> is the editor, the <span class="muted-strong">Caretaker</span> manages saved history, and each
+            <span class="muted-strong">Memento</span> stores a snapshot of the editor state.
+          </p>
+
+          <div class="hero-badges">
+            <div class="badge"><span class="dot blue"></span>Originator = Editor</div>
+            <div class="badge"><span class="dot green"></span>Memento = Saved Snapshot</div>
+            <div class="badge"><span class="dot orange"></span>Caretaker = History Stack</div>
+          </div>
+        </div>
+
+        <div class="top-actions">
+          <button class="btn btn-present" id="presentationBtn">Presentation Mode</button>
+          <div class="presentation-pill" id="presentationPill">● Demo Running</div>
+        </div>
+      </div>
+
+      <div class="status-bar">
+        <div class="status-label">Current Step</div>
+        <div class="status-message" id="statusMessage">Ready. Interact with the editor and save snapshots using the Memento pattern.</div>
+      </div>
+    </section>
+
+    <section class="layout">
+      <!-- ORIGINATOR / EDITOR -->
+      <article class="panel editor-panel" id="editorPanel">
+        <div class="glow-border"></div>
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <div class="panel-tag"><span class="dot blue"></span>Originator</div>
+            <h2 class="panel-title">Editor</h2>
+            <p class="panel-subtitle">The Originator holds the current state and can create or restore a Memento.</p>
+          </div>
+        </div>
+
+        <div class="panel-content">
+          <div class="editor-frame">
+            <div class="window-dots"><span></span><span></span><span></span></div>
+            <div class="editor-screen empty" id="editorContent">Editor is empty...</div>
+          </div>
+
+          <p class="tiny-caption">
+            Edit the content using the buttons below, then save the current state into a Memento.
+          </p>
+
+          <div class="controls" id="controlPanel">
+            <h3 class="control-title">Interactive Controls</h3>
+            <div class="action-buttons">
+              <button class="btn btn-blue" id="typeHelloBtn">Type Hello</button>
+              <button class="btn btn-blue" id="typeWorldBtn">Type World</button>
+              <button class="btn btn-green" id="saveStateBtn">Save State</button>
+              <button class="btn btn-orange" id="undoBtn">Undo</button>
+              <button class="btn btn-ghost" id="resetBtn" style="grid-column:1 / -1;">Reset</button>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- MEMENTO -->
+      <article class="panel memento-panel" id="mementoPanel">
+        <div class="glow-border"></div>
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <div class="panel-tag"><span class="dot green"></span>Memento</div>
+            <h2 class="panel-title">Snapshot Object</h2>
+            <p class="panel-subtitle">A Memento stores a copy of the editor state so it can be restored later.</p>
+          </div>
+        </div>
+
+        <div class="panel-content">
+          <div class="memento-zone" id="mementoZone">
+            <div class="memento-placeholder" id="mementoPlaceholder">
+              <strong>No active Memento animation yet.</strong><br />
+              Save state to create a snapshot, or use undo to restore one.
+            </div>
+
+            <div class="memento-card hidden" id="mementoCard">
+              <div class="memento-top">
+                <div class="memento-title" id="mementoActionTitle">Memento Created</div>
+                <div class="memento-badge" id="mementoActionBadge">SAVE</div>
+              </div>
+              <div class="memento-content" id="mementoContent">Hello</div>
+              <div class="memento-meta">
+                <div id="mementoId">Snapshot #1</div>
+                <div id="mementoTime">Just now</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="legend">
+            <div class="legend-item">
+              <span class="dot green"></span>
+              <div><strong>Encapsulation preserved:</strong> the Caretaker stores Mementos, but it does not inspect or modify the editor’s internal logic.</div>
+            </div>
+            <div class="legend-item">
+              <span class="dot green"></span>
+              <div><strong>Snapshot behavior:</strong> each save captures the current content exactly as it exists at that moment.</div>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- CARETAKER / HISTORY -->
+      <article class="panel history-panel" id="historyPanel">
+        <div class="glow-border"></div>
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <div class="panel-tag"><span class="dot orange"></span>Caretaker</div>
+            <h2 class="panel-title">History Stack</h2>
+            <p class="panel-subtitle">The Caretaker stores Mementos in a stack and returns the latest one during undo.</p>
+          </div>
+        </div>
+
+        <div class="panel-content">
+          <div class="history-frame">
+            <div class="stack-title">
+              <h3>Saved Mementos</h3>
+              <div class="stack-count" id="stackCount">0 snapshots</div>
+            </div>
+
+            <div class="stack" id="historyStack"></div>
+            <div class="history-empty" id="historyEmpty">
+              The history stack is empty.<br />
+              Save the editor state to push a Memento here.
+            </div>
+          </div>
+
+          <div class="legend">
+            <div class="legend-item">
+              <span class="dot orange"></span>
+              <div><strong>LIFO behavior:</strong> the most recent snapshot is restored first during undo.</div>
+            </div>
+            <div class="legend-item">
+              <span class="dot orange"></span>
+              <div><strong>Role of Caretaker:</strong> manages saved states without knowing how the editor stores them internally.</div>
+            </div>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section class="log-panel">
+      <div class="log-header">
+        <div>
+          <h3>Step-by-Step Activity Log</h3>
+          <p>Each action explains how the Memento pattern is working.</p>
+        </div>
+      </div>
+      <ol class="log-list" id="logList"></ol>
+    </section>
+
+    <div class="footer-note">Tip: Use <strong>Presentation Mode</strong> for an automatic live demo sequence.</div>
+  </div>
+
+  <script>
+    /**
+     * MEMENTO DESIGN PATTERN CLASSES
+     * --------------------------------
+     * Originator: EditorOriginator
+     * Memento: EditorMemento
+     * Caretaker: HistoryCaretaker
+     */
+
+    class EditorMemento {
+      constructor(id, state) {
+        this.id = id;
+        this.state = state;
+        this.createdAt = new Date();
+      }
+
+      getState() {
+        return this.state;
+      }
+
+      getLabel() {
+        return `Snapshot #${this.id}`;
+      }
+
+      getTimeString() {
+        return this.createdAt.toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit"
+        });
+      }
+    }
+
+    class EditorOriginator {
+      constructor() {
+        this.content = "";
+      }
+
+      typeWord(word) {
+        this.content = this.content ? `${this.content} ${word}` : word;
+      }
+
+      createMemento(id) {
+        return new EditorMemento(id, this.content);
+      }
+
+      restore(memento) {
+        this.content = memento.getState();
+      }
+
+      reset() {
+        this.content = "";
+      }
+
+      getContent() {
+        return this.content;
+      }
+    }
+
+    class HistoryCaretaker {
+      constructor() {
+        this.history = [];
+      }
+
+      push(memento) {
+        this.history.push(memento);
+      }
+
+      pop() {
+        return this.history.pop() || null;
+      }
+
+      peek() {
+        return this.history[this.history.length - 1] || null;
+      }
+
+      clear() {
+        this.history = [];
+      }
+
+      getAll() {
+        return [...this.history];
+      }
+
+      size() {
+        return this.history.length;
+      }
+    }
+
+    // -----------------------------
+    // UI STATE
+    // -----------------------------
+    const originator = new EditorOriginator();
+    const caretaker = new HistoryCaretaker();
+
+    let snapshotCounter = 0;
+    let isBusy = false;
+    let isPresentationMode = false;
+    let logCounter = 0;
+
+    // -----------------------------
+    // DOM REFERENCES
+    // -----------------------------
+    const app = document.getElementById("app");
+    const editorContent = document.getElementById("editorContent");
+    const historyStack = document.getElementById("historyStack");
+    const historyEmpty = document.getElementById("historyEmpty");
+    const stackCount = document.getElementById("stackCount");
+    const logList = document.getElementById("logList");
+    const statusMessage = document.getElementById("statusMessage");
+
+    const mementoPlaceholder = document.getElementById("mementoPlaceholder");
+    const mementoCard = document.getElementById("mementoCard");
+    const mementoContent = document.getElementById("mementoContent");
+    const mementoActionTitle = document.getElementById("mementoActionTitle");
+    const mementoActionBadge = document.getElementById("mementoActionBadge");
+    const mementoId = document.getElementById("mementoId");
+    const mementoTime = document.getElementById("mementoTime");
+
+    const editorPanel = document.getElementById("editorPanel");
+    const mementoPanel = document.getElementById("mementoPanel");
+    const historyPanel = document.getElementById("historyPanel");
+
+    const typeHelloBtn = document.getElementById("typeHelloBtn");
+    const typeWorldBtn = document.getElementById("typeWorldBtn");
+    const saveStateBtn = document.getElementById("saveStateBtn");
+    const undoBtn = document.getElementById("undoBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const presentationBtn = document.getElementById("presentationBtn");
+    const presentationPill = document.getElementById("presentationPill");
+
+    // -----------------------------
+    // HELPERS
+    // -----------------------------
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    function setBusy(value) {
+      isBusy = value;
+      const disabled = value || isPresentationMode;
+      typeHelloBtn.disabled = disabled;
+      typeWorldBtn.disabled = disabled;
+      saveStateBtn.disabled = disabled;
+      undoBtn.disabled = disabled;
+      resetBtn.disabled = disabled;
+    }
+
+    function updateEditorView() {
+      const content = originator.getContent();
+      if (!content) {
+        editorContent.textContent = "Editor is empty...";
+        editorContent.classList.add("empty");
+      } else {
+        editorContent.textContent = content;
+        editorContent.classList.remove("empty");
+      }
+    }
+
+    function updateHistoryView() {
+      const history = caretaker.getAll();
+      historyStack.innerHTML = "";
+
+      if (history.length === 0) {
+        historyEmpty.classList.remove("hidden");
+      } else {
+        historyEmpty.classList.add("hidden");
+
+        history.forEach((memento, index) => {
+          const item = document.createElement("div");
+          item.className = "stack-item";
+          if (index === history.length - 1) item.classList.add("top");
+          item.dataset.id = memento.id;
+
+          item.innerHTML = `
+            <div class="stack-item-header">
+              <div>${memento.getLabel()}</div>
+              <small>${memento.getTimeString()}</small>
+            </div>
+            <div class="stack-item-content">${escapeHtml(memento.getState() || "(empty state)")}</div>
+          `;
+
+          historyStack.appendChild(item);
+        });
+      }
+
+      stackCount.textContent = `${history.length} snapshot${history.length === 1 ? "" : "s"}`;
+    }
+
+    function setStatus(message) {
+      statusMessage.textContent = message;
+    }
+
+    function addLog(message, detail = "") {
+      logCounter += 1;
+      const item = document.createElement("li");
+      item.className = "log-item";
+      item.innerHTML = `
+        <div class="log-index">${logCounter}</div>
+        <div class="log-text">
+          ${escapeHtml(message)}
+          ${detail ? `<span>${escapeHtml(detail)}</span>` : ""}
+        </div>
+      `;
+      logList.prepend(item);
+    }
+
+    function escapeHtml(text) {
+      return String(text)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function flashPanel(panel) {
+      panel.classList.remove("active");
+      // Force reflow so animation can restart.
+      void panel.offsetWidth;
+      panel.classList.add("active");
+      setTimeout(() => panel.classList.remove("active"), 1000);
+    }
+
+    function showMemento(action, memento) {
+      mementoPlaceholder.classList.add("hidden");
+      mementoCard.classList.remove("hidden");
+
+      mementoActionTitle.textContent = action === "save" ? "Memento Created" : "Memento Restored";
+      mementoActionBadge.textContent = action === "save" ? "SAVE" : "UNDO";
+      mementoActionBadge.style.background = action === "save" ? "#7af0bb" : "#ffc66f";
+      mementoActionBadge.style.color = action === "save" ? "#0a2015" : "#261300";
+
+      mementoContent.textContent = memento.getState() || "(empty state)";
+      mementoId.textContent = memento.getLabel();
+      mementoTime.textContent = action === "save"
+        ? `Stored at ${memento.getTimeString()}`
+        : `Restored from ${memento.getTimeString()}`;
+
+      mementoCard.classList.remove("visible");
+      requestAnimationFrame(() => mementoCard.classList.add("visible"));
+      flashPanel(mementoPanel);
+    }
+
+    function resetMementoDisplay() {
+      mementoCard.classList.add("hidden");
+      mementoCard.classList.remove("visible");
+      mementoPlaceholder.classList.remove("hidden");
+    }
+
+    function getTopStackItemElement() {
+      return historyStack.querySelector(".stack-item.top");
+    }
+
+    function updatePresentationUI() {
+      if (isPresentationMode) {
+        app.classList.add("presentation-mode");
+        presentationPill.style.display = "inline-flex";
+        presentationBtn.textContent = "Presentation Running...";
+      } else {
+        app.classList.remove("presentation-mode");
+        presentationPill.style.display = "none";
+        presentationBtn.textContent = "Presentation Mode";
+      }
+    }
+
+    // -----------------------------
+    // SIMULATION ACTIONS
+    // -----------------------------
+    function typeWord(word) {
+      if (isBusy) return;
+
+      originator.typeWord(word);
+      updateEditorView();
+      flashPanel(editorPanel);
+
+      setStatus(`Typing "${word}" → the Originator updates its current state.`);
+      addLog(`Typing "${word}" → content updated`, `Editor content is now: "${originator.getContent()}"`);
+    }
+
+    function saveState() {
+      if (isBusy) return;
+
+      snapshotCounter += 1;
+      const memento = originator.createMemento(snapshotCounter);
+      caretaker.push(memento);
+
+      updateHistoryView();
+      showMemento("save", memento);
+      flashPanel(historyPanel);
+
+      setStatus("Saving state → the Originator creates a Memento and the Caretaker stores it.");
+      addLog(
+        "Saving state → Memento created",
+        `${memento.getLabel()} stored in the history stack with content: "${memento.getState() || "(empty state)"}"`
+      );
+    }
+
+    async function undo() {
+      if (isBusy) return;
+
+      const latest = caretaker.peek();
+      if (!latest) {
+        setStatus("Undo requested → no Memento exists in the history stack.");
+        addLog("Undo requested → nothing to restore", "The Caretaker stack is empty.");
+        flashPanel(historyPanel);
+        return;
+      }
+
+      isBusy = true;
+      setBusy(true);
+
+      const topElement = getTopStackItemElement();
+      if (topElement) {
+        topElement.classList.add("popping");
+      }
+
+      setStatus("Undo → the Caretaker pops the latest Memento and returns it to the Originator.");
+      addLog(
+        "Undo → restoring previous state",
+        `${latest.getLabel()} is popped from history and used to restore the editor.`
+      );
+      flashPanel(historyPanel);
+
+      await sleep(420);
+
+      const memento = caretaker.pop();
+      originator.restore(memento);
+
+      updateEditorView();
+      updateHistoryView();
+      showMemento("undo", memento);
+      flashPanel(editorPanel);
+
+      isBusy = false;
+      setBusy(false);
+    }
+
+    function resetSimulation(withLog = true) {
+      if (isBusy) return;
+
+      originator.reset();
+      caretaker.clear();
+      snapshotCounter = 0;
+
+      updateEditorView();
+      updateHistoryView();
+      resetMementoDisplay();
+
+      if (withLog) {
+        setStatus("Reset → editor, Memento display, and history stack cleared.");
+        addLog("Reset simulation", "All saved snapshots and editor content were cleared.");
+      } else {
+        setStatus("Ready. Interact with the editor and save snapshots using the Memento pattern.");
+      }
+    }
+
+    async function runPresentationMode() {
+      if (isBusy || isPresentationMode) return;
+
+      isPresentationMode = true;
+      updatePresentationUI();
+      setBusy(true);
+      resetSimulation(false);
+
+      addLog("Presentation Mode started", 'Automatic sequence: "Hello" → Save → "World" → Undo');
+      setStatus('Presentation Mode → running demo sequence: "Hello" → Save → "World" → Undo');
+
+      await sleep(850);
+      typeWord("Hello");
+
+      await sleep(1200);
+      saveState();
+
+      await sleep(1350);
+      typeWord("World");
+
+      await sleep(1400);
+      await undo();
+
+      await sleep(1300);
+      addLog(
+        "Presentation Mode completed",
+        'Final editor content returns to "Hello" because the saved Memento restored the previous state.'
+      );
+      setStatus('Demo complete → the editor was restored to the last saved snapshot: "Hello".');
+
+      isPresentationMode = false;
+      updatePresentationUI();
+      setBusy(false);
+    }
+
+    // -----------------------------
+    // EVENT LISTENERS
+    // -----------------------------
+    typeHelloBtn.addEventListener("click", () => typeWord("Hello"));
+    typeWorldBtn.addEventListener("click", () => typeWord("World"));
+    saveStateBtn.addEventListener("click", saveState);
+    undoBtn.addEventListener("click", undo);
+    resetBtn.addEventListener("click", () => resetSimulation(true));
+    presentationBtn.addEventListener("click", runPresentationMode);
+
+    // -----------------------------
+    // INITIAL RENDER
+    // -----------------------------
+    updateEditorView();
+    updateHistoryView();
+    resetMementoDisplay();
+    addLog(
+      "Simulation ready",
+      "Use the buttons to change editor content, save snapshots, and restore them through undo."
+    );
+  </script>
+</body>
+</html>
